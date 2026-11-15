@@ -36,7 +36,10 @@
   P.idle = () => !P.moved || performance.now() - P.last > 2400;
 
   /* where a fractional point of a 21:9 photograph lands inside an object-fit: cover box */
+  /* phones load 4:5 crops (taken from the centre of each 21:9 photograph), so fractions are remapped onto the crop */
+  PM.narrow = () => innerWidth < 900;
   PM.cover = (fx, fy, W, H, aspect = PM.IMG_ASPECT) => {
+    if (aspect === PM.IMG_ASPECT && PM.narrow()) { fx = (fx - 0.5) / (0.8 / PM.IMG_ASPECT) + 0.5; aspect = 0.8; }
     const s = Math.max(W / aspect, H);
     const dw = s * aspect, dh = s;
     return [(W - dw) / 2 + fx * dw, (H - dh) / 2 + fy * dh];

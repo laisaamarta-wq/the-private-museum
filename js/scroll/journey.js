@@ -70,7 +70,7 @@
         rm.focal = PM.cover(rm.fx, rm.fy, W, H);
         rm.plates.style.transformOrigin = `${rm.focal[0]}px ${rm.focal[1]}px`;
         PM.glints(rm.gRoom, G[rm.slug] && G[rm.slug].room, W, H, PM.IMG_ASPECT, 14);
-        PM.glints(rm.gMacro, G[rm.slug] && G[rm.slug].macro, W, H, PM.IMG_ASPECT, 10);
+        if (PM.narrow()) rm.gMacro.textContent = ''; else PM.glints(rm.gMacro, G[rm.slug] && G[rm.slug].macro, W, H, PM.IMG_ASPECT, 10);
       });
       pilH = H * 1.18; pilW = pilH * (511 / 2600);
       pilasters.forEach((p) => { p.style.width = pilW.toFixed(0) + 'px'; p.style.height = pilH.toFixed(0) + 'px'; });
@@ -91,7 +91,7 @@
   }
 
   function setMode() {
-    const next = desktop.matches && !PM.RM ? 'journey' : 'story';
+    const next = !PM.RM ? 'journey' : 'story'; /* the walk runs on phones too */
     if (next === mode) { layout(); return; }
     mode = next;
     html.classList.toggle('mode-journey', mode === 'journey');
@@ -158,7 +158,13 @@
       /* the enfilade: far away behind the doors, arriving at its natural size as you cross the threshold */
       const [gx, gy] = PM.cover(0.5, 0.47, W, H);
       const bE = B * B * (3 - 2 * B);
-      const sG = (0.62 + 0.38 * bE) * (1 + 0.05 * sm(4.4, 5.6, u)) * (1 + 1.4 * C * C);
+      let sG = (0.62 + 0.38 * bE) * (1 + 0.05 * sm(4.4, 5.6, u)) * (1 + 1.4 * C * C);
+      /* never let the hall behind be smaller than the opening it is seen through (tall phone screens) */
+      if (!doorGone) {
+        const cl = Math.max(0, r.l), cr = Math.min(W, r.r), ct = Math.max(0, r.t), cb = Math.min(H, r.b);
+        const need = Math.max((gx - cl) / Math.max(1, gx), (cr - gx) / Math.max(1, W - gx), (gy - ct) / Math.max(1, gy), (cb - gy) / Math.max(1, H - gy));
+        sG = Math.max(sG, need * 1.02);
+      }
       const [hx, hy] = PM.cover(0.5, 0.6, W, H);
       const ox = C > 0 ? hx : gx, oy = C > 0 ? hy : gy;
       const tx0 = (dcx - gx) * (1 - bE), ty0 = (dcy - gy) * (1 - bE);
@@ -450,7 +456,14 @@
   setMode();
   desktop.addEventListener('change', setMode);
   let rz;
-  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(setMode, 120); });
+  let lastW = innerWidth, lastH = innerHeight;
+  addEventListener('resize', () => {
+    /* phone toolbars change the height while you scroll: ignore those, or the walk would jump */
+    const dw = Math.abs(innerWidth - lastW), dh = Math.abs(innerHeight - lastH);
+    if (PM.pointer.touch && dw < 2 && dh < 180) return;
+    lastW = innerWidth; lastH = innerHeight;
+    clearTimeout(rz); rz = setTimeout(setMode, 120);
+  });
   addEventListener('load', layout);
   PM.onTick((t, dt) => (mode === 'journey' ? render(t, dt) : storyTick(t)));
 })();

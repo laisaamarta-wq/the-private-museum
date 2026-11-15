@@ -246,3 +246,28 @@ html.mode-journey .room__macro {
   -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 calc(var(--iris) - 14%), transparent var(--iris));
   mask-image: radial-gradient(circle at 50% 50%, #000 calc(var(--iris) - 14%), transparent var(--iris));
 }
+
+/* ============ the walk on phones ============ */
+@media (max-width: 899px) {
+  html.mode-journey .card { left: var(--m); right: var(--m); bottom: 13svh; max-width: none; }
+  html.mode-journey .card::before { inset: -14vh -20vw -10vh -20vw; background: radial-gradient(70% 60% at 40% 65%, rgba(0,0,0,.85), rgba(0,0,0,.4) 60%, transparent); }
+  html.mode-journey .card__name { font-size: clamp(3rem, 15vw, 4.6rem); }
+  html.mode-journey .card__type { font-size: 1.1rem; margin-top: 10px; }
+  html.mode-journey .stats { gap: 10px 18px; margin-top: 14px; }
+  html.mode-journey .stats dt { font-size: 1.35rem; }
+  html.mode-journey .card__go { margin-top: 14px; }
+  html.mode-journey .macro__cap { left: var(--m); right: var(--m); bottom: 13svh; max-width: none; }
+  html.mode-journey .macro__rarity { font-size: .92rem; }
+  html.mode-journey .intro { bottom: 16svh; }
+  html.mode-journey .gallery-note { right: var(--m); bottom: 13svh; }
+  html.mode-journey .roomword { font-size: 34vw; }
+  html.mode-journey .status { display: none; }
+  html.mode-journey .hint { bottom: 22px; }
+  html.mode-journey .rail { bottom: 14px; }
+  html.mode-journey .rail ol { gap: 16px; }
+  html.mode-journey .rail__name { display: none; }
+  html.mode-journey .finale__text { left: var(--m); right: var(--m); bottom: 9svh; max-width: none; }
+  html.mode-journey .finale__title { font-size: clamp(2.6rem, 12vw, 4rem); }
+  html.mode-journey .finale__body { font-size: 1rem; }
+  html.mode-journey .room__plates::after { background: linear-gradient(90deg, rgba(0,0,0,.6), transparent 4%, transparent 96%, rgba(0,0,0,.6)); }
+}
