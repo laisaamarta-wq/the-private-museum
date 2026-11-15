@@ -68,7 +68,7 @@ html.rm .room__plates .glints { opacity: 0; }
 /* ============ desktop: the sticky stage ============ */
 html.mode-journey .journey { position: relative; }
 html.mode-journey .stage {
-  position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #000;
+  position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; background: #000;
 }
 html.mode-journey .prologue, html.mode-journey .track { position: absolute; inset: 0; }
 html.mode-journey .pro--door, html.mode-journey .pro--gallery, html.mode-journey .pro--open {
@@ -249,24 +249,27 @@ html.mode-journey .room__macro {
 
 /* ============ the walk on phones ============ */
 @media (max-width: 899px) {
-  html.mode-journey .card { left: var(--m); right: var(--m); bottom: 13svh; max-width: none; }
+  /* the stage is as tall as the screen with the browser bars hidden, so it never jumps or leaves a black band
+     when the bars slide away; text keeps clear of the bottom bar while it is showing */
+  html.mode-journey { --tb: calc(100lvh - 100svh); }
+  html.mode-journey .card { left: var(--m); right: var(--m); bottom: calc(13svh + var(--tb)); max-width: none; }
   html.mode-journey .card::before { inset: -14vh -20vw -10vh -20vw; background: radial-gradient(70% 60% at 40% 65%, rgba(0,0,0,.85), rgba(0,0,0,.4) 60%, transparent); }
   html.mode-journey .card__name { font-size: clamp(3rem, 15vw, 4.6rem); }
   html.mode-journey .card__type { font-size: 1.1rem; margin-top: 10px; }
   html.mode-journey .stats { gap: 10px 18px; margin-top: 14px; }
   html.mode-journey .stats dt { font-size: 1.35rem; }
   html.mode-journey .card__go { margin-top: 14px; }
-  html.mode-journey .macro__cap { left: var(--m); right: var(--m); bottom: 13svh; max-width: none; }
+  html.mode-journey .macro__cap { left: var(--m); right: var(--m); bottom: calc(13svh + var(--tb)); max-width: none; }
   html.mode-journey .macro__rarity { font-size: .92rem; }
-  html.mode-journey .intro { bottom: 16svh; }
-  html.mode-journey .gallery-note { right: var(--m); bottom: 13svh; }
+  html.mode-journey .intro { bottom: calc(16svh + var(--tb)); }
+  html.mode-journey .gallery-note { right: var(--m); bottom: calc(13svh + var(--tb)); }
   html.mode-journey .roomword { font-size: 34vw; }
   html.mode-journey .status { display: none; }
-  html.mode-journey .hint { bottom: 22px; }
+  html.mode-journey .hint { bottom: calc(22px + var(--tb)); }
   html.mode-journey .rail { bottom: 14px; }
   html.mode-journey .rail ol { gap: 16px; }
   html.mode-journey .rail__name { display: none; }
-  html.mode-journey .finale__text { left: var(--m); right: var(--m); bottom: 9svh; max-width: none; }
+  html.mode-journey .finale__text { left: var(--m); right: var(--m); bottom: calc(9svh + var(--tb)); max-width: none; }
   html.mode-journey .finale__title { font-size: clamp(2.6rem, 12vw, 4rem); }
   html.mode-journey .finale__body { font-size: 1rem; }
   html.mode-journey .room__plates::after { background: linear-gradient(90deg, rgba(0,0,0,.6), transparent 4%, transparent 96%, rgba(0,0,0,.6)); }

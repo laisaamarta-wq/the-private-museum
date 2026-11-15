@@ -57,10 +57,51 @@
 
   const desktop = matchMedia('(min-width: 900px)');
   let mode = '';
+  const stageEl = $('.stage', journey);
   let W = 0, H = 0, top = 0, u = 0, target = 0, stepPos = 0, pilW = 0, pilH = 0;
 
+
+  /* how much the hall behind the doors must be enlarged so it fills the opening it is seen through, for a given u.
+     Built once per layout as a smooth, never-decreasing curve, so the hall only ever grows while you walk in. */
+  let floorT = null;
+  const FLOOR_N = 480, FLOOR_U = 7.6;
+  function needAt(uu) {
+    const sm = PM.smooth;
+    const A = sm(0.3, 1.9, uu), B = sm(1.9, 4.6, uu);
+    const [dcx, dcy] = PM.cover(DOOR.cx, DOOR.cy, W, H);
+    const [dx0, dy0] = PM.cover(DOOR.x0, DOOR.y0, W, H), [dx1, dy1] = PM.cover(DOOR.x1, DOOR.y1, W, H);
+    const sD = 1 + 0.08 * A + 3.4 * B * B;
+    const half = ((dx1 - dx0) / 2) * A;
+    const r = { l: dcx - half * sD, r: dcx + half * sD, t: dcy + (dy0 - dcy) * sD, b: dcy + (dy1 - dcy) * sD };
+    const [gx, gy] = PM.cover(0.5, 0.47, W, H);
+    const bE = B * B * (3 - 2 * B);
+    const tx0 = (dcx - gx) * (1 - bE), ty0 = (dcy - gy) * (1 - bE);
+    if (A <= 0.001) return 0;
+    const cl = Math.max(0, r.l), cr = Math.min(W, r.r), ct = Math.max(0, r.t), cb = Math.min(H, r.b);
+    return 1.015 * Math.max((gx + tx0 - cl) / Math.max(1, gx), (cr - gx - tx0) / Math.max(1, W - gx), (gy + ty0 - ct) / Math.max(1, gy), (cb - gy - ty0) / Math.max(1, H - gy));
+  }
+  function buildFloor() {
+    const n = FLOOR_N, raw = new Float32Array(n + 1);
+    for (let i = 0; i <= n; i++) raw[i] = needAt((i / n) * FLOOR_U);
+    /* look ahead a little, keep it rising, then soften the corners */
+    const look = Math.round(n * (0.7 / FLOOR_U)), out = new Float32Array(n + 1);
+    let run = 0;
+    for (let i = 0; i <= n; i++) { let m = 0; for (let j = i; j <= Math.min(n, i + look); j++) m = Math.max(m, raw[j]); run = Math.max(run, m); out[i] = run; }
+    const w = Math.round(n * (0.5 / FLOOR_U)), sm2 = new Float32Array(n + 1);
+    for (let pass = 0; pass < 2; pass++) {
+      const src = pass ? sm2.slice() : out;
+      for (let i = 0; i <= n; i++) { let a = 0, c = 0; for (let j = i - w; j <= i + w; j++) { a += src[Math.min(n, Math.max(0, j))]; c++; } sm2[i] = Math.max(a / c, raw[i]); }
+    }
+    floorT = sm2;
+  }
+  function floorAt(uu) {
+    if (!floorT) return 0;
+    const x = Math.min(1, Math.max(0, uu / FLOOR_U)) * FLOOR_N, i = Math.floor(x), f = x - i;
+    return floorT[i] + (floorT[Math.min(FLOOR_N, i + 1)] - floorT[i]) * f;
+  }
+
   function layout() {
-    W = innerWidth; H = innerHeight;
+    W = innerWidth; H = (mode === 'journey' && stageEl.offsetHeight) || innerHeight; /* the stage height is fixed (largest viewport), so phone bars never change it */
     const r = Math.min(W, H) * 0.26;
     if (mode === 'journey') {
       journey.style.height = ((stops.length - 1) * STEP * H + H).toFixed(0) + 'px';
@@ -77,6 +118,7 @@
       doorTorch.size(W, H, r * 1.1);
       const dpr = Math.min(devicePixelRatio || 1, 1.25);
       canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildFloor();
     } else {
       journey.style.height = '';
       rooms.forEach((rm) => {
@@ -158,18 +200,19 @@
       /* the enfilade: far away behind the doors, arriving at its natural size as you cross the threshold */
       const [gx, gy] = PM.cover(0.5, 0.47, W, H);
       const bE = B * B * (3 - 2 * B);
-      let sG = (0.62 + 0.38 * bE) * (1 + 0.05 * sm(4.4, 5.6, u)) * (1 + 1.4 * C * C);
-      /* never let the hall behind be smaller than the opening it is seen through (tall phone screens) */
-      if (!doorGone) {
-        const cl = Math.max(0, r.l), cr = Math.min(W, r.r), ct = Math.max(0, r.t), cb = Math.min(H, r.b);
-        const need = Math.max((gx - cl) / Math.max(1, gx), (cr - gx) / Math.max(1, W - gx), (gy - ct) / Math.max(1, gy), (cb - gy) / Math.max(1, H - gy));
-        sG = Math.max(sG, need * 1.02);
-      }
-      const [hx, hy] = PM.cover(0.5, 0.6, W, H);
-      const ox = C > 0 ? hx : gx, oy = C > 0 ? hy : gy;
+      let sG = (0.62 + 0.38 * bE) * (1 + 0.05 * sm(4.4, 5.6, u));
+      /* the hall behind must always fill the opening it is seen through (tall phone screens): a smooth floor
+         that also holds after the door frame has left the screen, so the hall never shrinks back */
       const tx0 = (dcx - gx) * (1 - bE), ty0 = (dcy - gy) * (1 - bE);
-      set(proGalImg, 'transformOrigin', `${ox.toFixed(1)}px ${oy.toFixed(1)}px`);
-      set(proGalImg, 'transform', `translate3d(${tx0.toFixed(1)}px,${ty0.toFixed(1)}px,0) scale(${sG.toFixed(4)})`);
+      const need = floorAt(u), d = sG - need, e = 0.05;
+      sG = (sG + need + Math.sqrt(d * d + e * e)) / 2;
+      /* walking on into the first salon: grow about the far vitrine, written as one transform about a fixed origin
+         so nothing shifts when this begins */
+      const [hx, hy] = PM.cover(0.5, 0.6, W, H);
+      const cg = 1 + 1.4 * C * C;
+      const tx = tx0 + (1 - cg) * (hx - gx), ty = ty0 + (1 - cg) * (hy - gy);
+      set(proGalImg, 'transformOrigin', `${gx.toFixed(1)}px ${gy.toFixed(1)}px`);
+      set(proGalImg, 'transform', `translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) scale(${(sG * cg).toFixed(4)})`);
       /* the first salon blooms out of the far vitrine of the enfilade: a soft circle of light that widens
          while the camera keeps walking forward. The salon arrives already lit, never as a dark box. */
       const [vx, vy] = PM.cover(0.5, 0.6, W, H);
